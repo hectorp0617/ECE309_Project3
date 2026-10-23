@@ -104,4 +104,16 @@ TEST(calc_division_by_zero) {
 //   ws_<case>                     REQUIRED: every row of the table in spec §4.4
 //   calc_<case>                   left-to-right, parentheses, negatives
 
+// Tests added below
+
+TEST(reg_null_rejected){
+    ToolRegistry r;
+
+    CHECK(r.size() == 0);   // Initial size should be 0
+    CHECK(!r.add(nullptr)); // Adding a null tool should return false
+    CHECK(r.size() == 0);   // Size should remain 0
+    CHECK(r.find("missing") == nullptr); // Finding any tool should return nullptr
+}
+
+
 int main(int argc, char** argv) { return mt::run_all(argc, argv); }
