@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>        
 
 namespace fs = std::filesystem;
 
@@ -106,6 +107,7 @@ TEST(calc_division_by_zero) {
 
 // Tests added below
 
+// Test that adding a null tool is rejected and does not change the size of the registry
 TEST(reg_null_rejected){
     ToolRegistry r;
 
@@ -113,6 +115,28 @@ TEST(reg_null_rejected){
     CHECK(!r.add(nullptr)); // Adding a null tool should return false
     CHECK(r.size() == 0);   // Size should remain 0
     CHECK(r.find("missing") == nullptr); // Finding any tool should return nullptr
+}
+
+TEST(reg_for_each_visits_each_once){
+    ToolRegistry r;
+    auto t1 = std::make_unique<NamedTool>("alpha");
+    auto t2 = std::make_unique<NamedTool>("beta");
+    auto t3 = std::make_unique<NamedTool>("gamma");
+
+    REQUIRE(r.add(std::move(t1)));
+    REQUIRE(r.add(std::move(t2)));
+    REQUIRE(r.add(std::move(t3)));
+
+    std::vector<std::string> visited;
+    r.for_each([&visited](const Tool& tool) {
+        visited.push_back(tool.name());
+    });
+
+    // Check that all tools were visited exactly once
+    CHECK(visited.size() == 3);
+    CHECK(std::find(visited.begin(), visited.end(), "alpha") != visited.end());
+    CHECK(std::find(visited.begin(), visited.end(), "beta") != visited.end());
+    CHECK(std::find(visited.begin(), visited.end(), "gamma") != visited.end());
 }
 
 
