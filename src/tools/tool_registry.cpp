@@ -4,36 +4,85 @@
 // Every function below is a stub so the starter compiles. Replace each body.
 
 #include "tools/tool_registry.h"
+#include <cstdint>
 
-ToolRegistry::ToolRegistry() = default;    // TODO: create your initial buckets
+
+
+// ToolRegistry::ToolRegistry() = default;    // TODO: create your initial buckets
+//LINE ABOVE REPLACED WITH BELOW LINE
+ToolRegistry::ToolRegistry() : buckets(16) {}       //Initializes the buckets vector with 16 empty buckets (vectors of unique_ptr<Tool>)
+
+
 ToolRegistry::~ToolRegistry() = default;   // unique_ptrs in your buckets free the tools
 
-std::size_t ToolRegistry::hash(std::string_view /*key*/) noexcept {
-    return 0;   // TODO: FNV-1a (spec Appendix A) or another real string hash
+
+//hash
+std::size_t ToolRegistry::hash(std::string_view key) noexcept {
+    std::uint64_t h = 14695981039346656037ULL;
+
+    for (unsigned char c : key) {
+        h ^= static_cast<std::uint64_t>(c);
+        h *= 1099511628211ULL;
+    }
+
+    return static_cast<std::size_t>(h);
 }
+//end hash
+
 
 bool ToolRegistry::add(std::unique_ptr<Tool> /*tool*/) {
     return false;   // TODO
 }
 
-Tool* ToolRegistry::find(std::string_view /*name*/) const {
-    return nullptr;   // TODO
+
+
+
+
+
+
+// Find the tool registered under `name`, or nullptr if not found.
+Tool* ToolRegistry::find(std::string_view name) const {
+    std::size_t index = hash(name) % buckets.size(); // Calculate the bucket index using the hash function
+    const auto& bucket = buckets[index]; // Get the corresponding bucket
+
+    for (const auto& tool_ptr : bucket) { // Iterate through the tools in the bucket
+        if (tool_ptr && tool_ptr->name() == name) { // Check if the tool's name matches
+            return tool_ptr.get(); // Return a raw pointer to the found tool
+        }
+    }
+
+    return nullptr; // Return nullptr if the tool is not found
 }
+//End find
+
+
+
 
 std::size_t ToolRegistry::size() const noexcept {
-    return 0;   // TODO
+    return element_count;   // TODO
 }
 
-void ToolRegistry::for_each(const std::function<void(const Tool&)>& /*fn*/) const {
-    // TODO
+// Calls fn once per registered tool. Order is unspecified (callers that
+// need a stable order, like --tools, sort the names themselves).
+void ToolRegistry::for_each(const std::function<void(const Tool&)>& fn) const {
+    
+    for (const auto& bucket : buckets) { // Iterate through each bucket
+        for (const auto& tool_ptr : bucket) { // Iterate through each tool in the bucket
+            if (tool_ptr) { // Check if the tool pointer is valid
+                fn(*tool_ptr); // Call the provided function with the dereferenced tool
+            }
+        }
+    }
 }
+//end for_each
 
 std::size_t ToolRegistry::bucket_count() const noexcept {
-    return 0;   // TODO
+    return buckets.size();   
 }
 
 double ToolRegistry::load_factor() const noexcept {
-    return 0.0;   // TODO
+    // Calculate the load factor as the ratio of the number of registered tools to the number of buckets
+    return static_cast<double>(element_count) / static_cast<double>(buckets.size());
 }
 
 std::size_t ToolRegistry::max_probe_length() const {
