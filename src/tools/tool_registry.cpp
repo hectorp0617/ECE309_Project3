@@ -5,6 +5,7 @@
 
 #include "tools/tool_registry.h"
 #include <cstdint>
+#include <utility>
 
 
 
@@ -30,11 +31,25 @@ std::size_t ToolRegistry::hash(std::string_view key) noexcept {
 //end hash
 
 
-bool ToolRegistry::add(std::unique_ptr<Tool> /*tool*/) {
-    return false;   // TODO
+// Takes ownership of `tool` and indexes it under tool->name().
+// Returns false (and destroys `tool`) if `tool` is null or the name is
+// already registered; the existing tool is left untouched.
+bool ToolRegistry::add(std::unique_ptr<Tool> tool) {
+    if (!tool) {
+        return false;
+    }
+
+    if (find(tool->name()) != nullptr) {
+        return false;
+    }
+
+    std::size_t index = hash(tool->name()) % buckets.size();
+    buckets[index].push_back(std::move(tool));
+    ++element_count;
+
+    return true;
 }
-
-
+//end add
 
 
 
