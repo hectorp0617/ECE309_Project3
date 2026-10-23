@@ -117,6 +117,7 @@ TEST(reg_null_rejected){
     CHECK(r.find("missing") == nullptr); // Finding any tool should return nullptr
 }
 
+// Test that for_each visits each registered tool exactly once
 TEST(reg_for_each_visits_each_once){
     ToolRegistry r;
     auto t1 = std::make_unique<NamedTool>("alpha");
@@ -138,6 +139,47 @@ TEST(reg_for_each_visits_each_once){
     CHECK(std::find(visited.begin(), visited.end(), "beta") != visited.end());
     CHECK(std::find(visited.begin(), visited.end(), "gamma") != visited.end());
 }
+
+// Test that adding 10,000 tools maintains the load factor <= 1.0 and prints bucket_count, load_factor, and max_probe_length
+TEST(reg_10000_tools){
+    ToolRegistry r;
+    Tool* first = nullptr;
+
+    // Add 10,000 tools to the registry
+    for (int i = 0; i < 10000; ++i) {
+        std::string name = "tool_" + std::to_string(i);
+        REQUIRE(r.add(std::make_unique<NamedTool>(name)));
+
+    
+        if (i == 0) {
+            first = r.find(name); // Store the first tool for later verification
+            REQUIRE(first != nullptr); // Ensure the first tool was added successfully
+        }
+        CHECK(r.load_factor() <= 1.0); // Ensure load factor does not exceed 1.0
+    }
+
+
+
+    CHECK(r.size() == 10000); // Ensure the size is 10,000
+
+    for (int i = 0; i < 10000; ++i) {
+        std::string name = "tool_" + std::to_string(i);
+        Tool* tool = r.find(name);
+        REQUIRE(tool != nullptr);
+        CHECK(tool->name() == name);
+    }
+
+    CHECK(r.find("tool_0") == first); // Ensure the first tool is still the same object
+    CHECK(r.max_probe_length() <= 64); // Ensure the max probe length does not exceed 64
+
+
+    // Print bucket_count, load_factor, and max_probe_length for instrumentation
+    std::printf("Bucket count: %zu\n", r.bucket_count());
+    std::printf("Load factor: %.6f\n", r.load_factor());
+    std::printf("Max probe length: %zu\n", r.max_probe_length());
+
+}       //END of 10000 tools test
+
 
 
 int main(int argc, char** argv) { return mt::run_all(argc, argv); }

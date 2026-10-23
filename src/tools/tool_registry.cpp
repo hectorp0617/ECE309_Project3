@@ -19,17 +19,21 @@ ToolRegistry::~ToolRegistry() = default;   // unique_ptrs in your buckets free t
 
 //rehash
 void ToolRegistry::rehash(std::size_t new_bucket_count) {
-    std::vector<std::vector<std::unique_ptr<Tool>>> new_buckets(new_bucket_count); // Create a new vector of buckets with the specified size
+    std::vector<std::vector<std::unique_ptr<Tool>>> new_buckets(
+        new_bucket_count);
 
-    for (auto& bucket : buckets) { // Iterate through each existing bucket
-        for (auto& tool_ptr : bucket) { // Iterate through each tool in the bucket
-            if (tool_ptr) { // Check if the tool pointer is valid
-                std::size_t new_index = hash(tool_ptr->name()) % new_bucket_count; // Calculate the new index for the tool in the new buckets
-                new_buckets[new_index].push_back(std::move(tool_ptr)); // Move the tool to the new bucket
-            }
+        // Move all existing tools into the new buckets based on the new hash values
+    for (auto& bucket : buckets) {
+        for (auto& tool_ptr : bucket) {
+            std::size_t index =
+                hash(tool_ptr->name()) % new_bucket_count;
+
+            new_buckets[index].push_back(std::move(tool_ptr));
         }
-        buckets = std::move(new_buckets); // Replace the old buckets with the new buckets
     }
+
+    // both loops must finish before replacing the old buckets with the new ones
+    buckets = std::move(new_buckets);
 }
 //end rehash
 
@@ -131,5 +135,5 @@ std::size_t ToolRegistry::max_probe_length() const {
         }
     }
 
-    return longest;   // TODO
+    return longest;   // 
 }
