@@ -17,6 +17,23 @@ ToolRegistry::ToolRegistry() : buckets(16) {}       //Initializes the buckets ve
 ToolRegistry::~ToolRegistry() = default;   // unique_ptrs in your buckets free the tools
 
 
+//rehash
+void ToolRegistry::rehash(std::size_t new_bucket_count) {
+    std::vector<std::vector<std::unique_ptr<Tool>>> new_buckets(new_bucket_count); // Create a new vector of buckets with the specified size
+
+    for (auto& bucket : buckets) { // Iterate through each existing bucket
+        for (auto& tool_ptr : bucket) { // Iterate through each tool in the bucket
+            if (tool_ptr) { // Check if the tool pointer is valid
+                std::size_t new_index = hash(tool_ptr->name()) % new_bucket_count; // Calculate the new index for the tool in the new buckets
+                new_buckets[new_index].push_back(std::move(tool_ptr)); // Move the tool to the new bucket
+            }
+        }
+        buckets = std::move(new_buckets); // Replace the old buckets with the new buckets
+    }
+}
+//end rehash
+
+
 //hash
 std::size_t ToolRegistry::hash(std::string_view key) noexcept {
     std::uint64_t h = 14695981039346656037ULL;
@@ -41,6 +58,10 @@ bool ToolRegistry::add(std::unique_ptr<Tool> tool) {
 
     if (find(tool->name()) != nullptr) {
         return false;
+    }
+
+    if (element_count + 1 > buckets.size()) {
+        rehash(buckets.size() * 2); // Double the number of buckets if the load factor exceeds 1.0
     }
 
     std::size_t index = hash(tool->name()) % buckets.size();

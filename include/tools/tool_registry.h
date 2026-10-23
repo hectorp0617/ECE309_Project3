@@ -75,4 +75,6 @@ private:
     // PERSONALLY ADDED
     std::vector<std::vector<std::unique_ptr<Tool>>> buckets; // Vector of buckets for separate chaining
     std::size_t element_count = 0; // Count of registered tools, initialized to 0
+
+    void rehash(std::size_t new_bucket_count); // Function to rehash the table when needed
 };
