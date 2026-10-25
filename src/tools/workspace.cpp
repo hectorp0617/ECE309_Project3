@@ -27,27 +27,34 @@ bool Workspace::resolve(std::string_view user_path, fs::path* out,
         return false;
     }
 
-    fs::path relative_path(user_path); // Convert user_path to a filesystem path
 
-    // Check if the path is absolute or has a root path (e.g., starts with '/')
-    if (relative_path.is_absolute() || relative_path.has_root_path()) {
-        *reason = "absolute path not allowed";
+    try {
+        fs::path relative_path(user_path); // Convert user_path to a filesystem path
+
+        // Check if the path is absolute or has a root path (e.g., starts with '/')
+        if (relative_path.is_absolute() || relative_path.has_root_path()) {
+            *reason = "absolute path not allowed";
+            return false;
+        }
+
+        fs::path n = relative_path.lexically_normal(); // Normalize the path to remove redundant elements
+
+        // Check if the normalized path is empty or starts with ".." (parent directory)
+        if (!n.empty() && *n.begin() == "..") {
+            *reason = "path escapes workspace";
+            return false;
+        }
+
+        if (n == ".") {
+            *out = root(); // If the normalized path is ".", set out to the root of the workspace
+        } else {
+            *out = root() / n; // Otherwise, append the normalized path to the root
+        }
+
+        return true; // Resolution successful
+
+    } catch (...) {
+        *reason = "invalid path"; // Catch any exceptions and set the reason to "invalid path"
         return false;
     }
-
-    fs::path n = relative_path.lexically_normal(); // Normalize the path to remove redundant elements
-
-    // Check if the normalized path is empty or starts with ".." (parent directory)
-    if (!n.empty() && *n.begin() == "..") {
-        *reason = "path escapes workspace";
-        return false;
-    }
-
-    if (n == ".") {
-        *out = root(); // If the normalized path is ".", set out to the root of the workspace
-    } else {
-        *out = root() / n; // Otherwise, append the normalized path to the root
-    }
-
-    return true; // Resolution successful
 }
