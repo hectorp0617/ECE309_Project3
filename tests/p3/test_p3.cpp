@@ -180,6 +180,41 @@ TEST(reg_10000_tools){
 
 }       //END of 10000 tools test
 
+TEST(reg_alt_hash) {
+    ToolRegistry r;
+
+    // Add 10,000 tools with names that are likely to collide under a weak hash function
+    for (int i = 0; i < 10000; ++i) {
+        REQUIRE(r.add(std::make_unique<NamedTool>("tool_" + std::to_string(i))));
+    }
+
+    std::vector<int> counts(r.bucket_count(), 0);
+
+    // Count the number of tools in each bucket
+    for (int i = 0; i < 10000; ++i) {
+        std::string name = "tool_" + std::to_string(i);
+        std::size_t weak_hash = static_cast<unsigned char>(name[0]) + name.size(); // Weak hash function
+
+        ++counts[weak_hash % r.bucket_count()];     // Increment the count for the corresponding bucket
+    }
+
+    int longest = 0;
+
+    // Find the length of the longest chain (bucket) under the weak hash function
+    for (int count : counts) {
+        if (count > longest) {
+            longest = count; // Update the longest chain length if the current bucket's count is greater
+        }
+    }
+
+    // Print the instrumentation results
+    std::printf("Bucket count: %zu\n", r.bucket_count());
+    std::printf("Load factor: %.6f\n", r.load_factor());
+    std::printf("Max probe length: %zu\n", r.max_probe_length());
+    std::printf("Longest chain under weak hash: %d\n", longest);
+    CHECK(longest > 1); // Ensure that there is at least one collision under the
+
+}
 
 
 int main(int argc, char** argv) { return mt::run_all(argc, argv); }
