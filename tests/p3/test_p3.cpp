@@ -217,4 +217,66 @@ TEST(reg_alt_hash) {
 }
 
 
+// Test that the workspace accepts valid paths and normalizes them correctly
+TEST(ws_accepts_valid_paths) {
+    TempDir d;
+    Workspace ws(d.path());
+
+    // Test cases for valid paths and their expected normalized forms
+    struct Case {
+        std::string user_path;
+        fs::path expected;
+    };
+
+    // Define a vector of test cases with user paths and their expected normalized forms
+    std::vector<Case> cases = {
+        {"notes/todo.txt", ws.root() / "notes/todo.txt"},
+        {"./notes//todo.txt", ws.root() / "notes/todo.txt"},
+        {".", ws.root()},
+        {"a/../b", ws.root() / "b"},
+        {"a/..", ws.root()},
+        {"new/dir/file.txt", ws.root() / "new/dir/file.txt"},
+        {"my..notes.txt", ws.root() / "my..notes.txt"}
+    };
+
+    for (const auto& c : cases) {
+        fs::path out;
+        std::string reason;
+        REQUIRE(ws.resolve(c.user_path, &out, &reason)); // Ensure the path resolves successfully
+        CHECK(out == c.expected); // Check that the resolved path matches the expected normalized form
+        
+    }
+}       //END of ws_accepts_valid_paths test
+
+TEST(ws_rejects_invalid_paths) {
+    TempDir d;
+    Workspace ws(d.path());
+
+    // Test cases for invalid paths and their expected rejection reasons
+    struct Case {
+        std::string user_path;
+        std::string expected_reason;
+    };
+
+    // Define a vector of test cases with user paths and their expected rejection reasons
+    std::vector<Case> cases = {
+        {"", "empty path"},
+        {std::string("notes") + '\0' + "/x",
+        "Path contains null character"},
+        {"/etc/passwd", "absolute path not allowed"},
+        {"..", "path escapes workspace"},
+        {"../etc/passwd", "path escapes workspace"},
+        {"a/../../b", "path escapes workspace"},
+        {"notes/../../ws/notes/todo.txt", "path escapes workspace"}
+    };
+
+    for (const auto& c : cases) {
+        fs::path out;
+        std::string reason;
+        CHECK(!ws.resolve(c.user_path, &out, &reason)); // Ensure the path is rejected
+        CHECK(reason == c.expected_reason); // Check that the rejection reason matches the expected reason
+        CHECK(!reason.empty()); // Ensure that the reason is not empty
+    }
+}       //END of ws_rejects_invalid_paths test
+
 int main(int argc, char** argv) { return mt::run_all(argc, argv); }
