@@ -279,4 +279,68 @@ TEST(ws_rejects_invalid_paths) {
     }
 }       //END of ws_rejects_invalid_paths test
 
+// Test that the calculator evaluates various expressions correctly
+TEST(calc_req_exp) {
+    struct Case {
+        std::string expr;
+        double expected_value;
+    };
+
+    // Define a vector of test cases with expressions and their expected evaluated values
+    std::vector<Case> cases = {
+        {"2 + 3 * 4", 14},
+        {"10 - 4 - 3", 3},
+        {"100 / 10 / 5", 2},
+        {"(2 + 3) * 4", 20},
+        {"2 * (3 + 4) - 5", 9},
+        {"-3 * -3", 9},
+        {"7 / 2", 3.5},
+        {"1.5 + 2.25", 3.75},
+        {"20 / (2 + 3) + 6", 10}
+    };
+
+    // Evaluate each expression and check that the result matches the expected value
+    for (const auto& c : cases) {
+        double value = 0;
+        std::string error;
+        REQUIRE(eval(c.expr, &value, &error)); // Ensure the expression evaluates successfully
+        CHECK(value == c.expected_value); // Check that the evaluated value matches the expected value
+    }
+}   //END of calc_req_exp test
+
+// Test that the calculator rejects division by zero and provides the correct error message
+TEST(calc_computed_expr) {
+    double val = 0;
+    std::string err;
+
+    CHECK(!eval("1 / 0", &val, &err)); // Check that division by zero is rejected
+    CHECK(err == "division by zero"); // Check that the error message is correct
+}   //END of calc_computed_expr test
+
+// Test that the calculator can handle a long expression without crashing or running out of memory
+TEST(calc_long_expr) {
+    std::string long_expr = "1";
+
+    for (int i = 1; i < 20000; i++) {
+        long_expr += " + 1"; // Build a long expression by appending "+ 1" repeatedly
+    }
+
+    double val = 0;
+    std::string err;
+    REQUIRE(eval(long_expr, &val, &err)); // Ensure the long expression evaluates successfully
+    CHECK(val == 20000); // Check that the evaluated value is correct
+}       //END of calc_long_expr test
+
+
+// Test calcularor's ability to handle deeply nested parentheses without crashing or running out of memory
+TEST(calc_parentheses) {
+    std::string expr = std::string(5000, '(') + "7" + std::string(5000, ')');
+
+    double val = 0;
+    std::string err;
+    REQUIRE(eval(expr, &val, &err)); // Ensure the expression with many parentheses evaluates
+    CHECK(val == 7); // Check that the evaluated value is correct
+}       //END of calc_parentheses test
+
+
 int main(int argc, char** argv) { return mt::run_all(argc, argv); }
