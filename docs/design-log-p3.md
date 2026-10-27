@@ -15,9 +15,6 @@ The weak hase performed poorly as every tested name started with t. As a result,
 The registry owns each tool through a std::unique_ptr<Tool>. Furthermore, the tool itself is seperatly allocated, while the owning pointer is stored in a bucket. These references are moved into new buckets during rehashing without the tool objects being moved. As a result, even after resizing, a raw pointer that find() returns still refers to the same object. That pointer is borrowed by the caller and cannot be deleted. After inserting the remaining tools and saving the address of the first tool, my scale test verified that the address remained the same after 10,000 insertions.
 
 ## 3. Calculator trace
-<!-- Trace the values and ops stacks for 2 * (3 + 4) - 5, one token at a
-     time, in your own words. -->
-
 Example: TOKEN | WHAT HAPPENS | NUMBERS | OPERATORS
 
 2| push 2| 2| empty
